@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=3,6 python -m torch.distributed.launch --nproc_per_node=2  --master_port=3278 scripts/train.py configs/UNet/unet.py --distributed=True

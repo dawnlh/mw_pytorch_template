@@ -10,3 +10,5 @@ timm
 tensorboard
 moviepy
 einops 
+pyiqa
+ptflops

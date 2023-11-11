@@ -6,8 +6,16 @@
 * Opencv-python 
 * Scikit-image
 * Scikit-learn
+* ... (更多依赖请参考 requirements.txt)
+
+
 ## 安装步骤
-### 准备安装环境 (Pytorch 安装， 已经安装了 Pytorch 的可以直接跳过）
+
+### 准备安装环境 
+
+Pytorch 安装
+
+> 已经安装了 Pytorch 的可以直接跳过
 ```
 #conda 方式进行安装
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
@@ -26,30 +34,21 @@ pip install torch torchvision torchaudio -i https://pypi.tuna.tsinghua.edu.cn/si
 >>torch.cuda.is_availble()
 #如果输出为True,表示pytorch GPU版本安装成功
 ```
-### 安装CACTI
+### 安装模板代码库
 
 ```
-# 下载CACTI代码仓库
-git clone https://github.com/ucaswangls/cacti.git
+# 下载代码仓库
+git clone https://github.com/dawnlh/simple_pytorch_template
 
 # 安装相关依赖包
-cd cacti
+cd simple_pytorch_template
 pip install -r requirements.txt
 
-# 编译安装cacti
+# 编译安装（可选）
 python setup.py develop
 ```
 * 如果 pip install -r requirements.txt 安装较慢，可添加清华源进行加速
 
 ```
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/ 
-```
-
-验证CACTI是否安装成功
-```
-python tools/test_cacti_repo.py
-```
-测试通过会出现以下信息
-```
-Welcome to the Video SCI repository!
 ```

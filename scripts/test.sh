@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=6 python scripts/test.py configs/UNet/unet.py --checkpoint checkpoints/model_latest.pth
