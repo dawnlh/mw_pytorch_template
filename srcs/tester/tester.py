@@ -25,6 +25,8 @@ class Tester(BaseTester):
         time_start = time.time()
         with torch.no_grad():
             for i, (img_noise, img_target) in enumerate(tqdm(self.test_dataloader, desc='⏳ Testing')):
+
+                # data to device
                 img_noise, img_target = img_noise.to(self.device), img_target.to(self.device)
 
                 # inference

@@ -14,6 +14,8 @@ def build_dataloader(cfg):
         return build_train_dataloader(cfg)
     elif cfg.runtime.status in ['test', 'realexp', 'simuexp']:
         return build_test_dataloader(cfg)
+    else:
+        raise NotImplementedError(f"status {cfg.runtime.status} not implemented")
 
 
 def build_train_dataloader(cfg):

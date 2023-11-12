@@ -1,4 +1,7 @@
-## trainer
+# ------------------------------------------------------------------
+# trainer settings
+# ------------------------------------------------------------------
+
 trainer = dict(
     name = 'trainer', # name of the trainer file in srcs/trainer
     num_epochs=20,    # total epochs to run

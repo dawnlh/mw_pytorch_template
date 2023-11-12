@@ -1,4 +1,7 @@
-## data
+# ----------------------------------------
+# dataset settings
+# ----------------------------------------
+
 # pipeline for image preprocessing
 resize_h,resize_w = 256,256
 train_pipeline = [ 

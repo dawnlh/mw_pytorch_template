@@ -104,8 +104,10 @@ def main():
     time_start = time.time()
     with torch.no_grad():
         for batch_idx, (img_noise, img_target) in enumerate(test_dataloader):
-            img_noise, img_target = img_noise.to(
-                    device), img_target.to(device)
+
+            # data to device
+            img_noise, img_target = img_noise.to(device), img_target.to(device)
+            
             # forward
             output = model(img_noise)
 
