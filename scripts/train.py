@@ -177,17 +177,18 @@ def main():
             
             # info record
             metric_str = ''
-            if rank==0 and (iteration % cfg.trainer.logging_interval) == 0:
+            if iteration % cfg.trainer.logging_interval == 0:
                 lr = optimizer.state_dict()["param_groups"][0]["lr"]
                 iter_metrics = metrics(model_out, img_target)
-                iter_metrics.update({"loss":loss.item()})
-                for k, v in iter_metrics.items():
-                    if isinstance(v, torch.Tensor):
-                        v = v.item()
+                iter_metrics.update({"loss":loss})
+                for k, v_ in iter_metrics.items():
+                    v = collect(v_) if is_distributed else v
+                    v = v.item() if isinstance(v, torch.Tensor) else v
                     writer.add_scalar(f'[train]/{k}', v, epoch*len(train_dataloader) + iteration)
                     metric_str += f'{k}: {v:.5f} '
                 iter_len = len(str(iter_num))
-                logger.info("Train: [{}][{:>{}}/{}]\tlr: {:.6f}, loss: {:.5f} {}".format(epoch+1,iteration*n_gpus,iter_len,iter_num*n_gpus,lr,loss.item(),metric_str))
+                if rank==0:
+                    logger.info("Train: [{}][{:>{}}/{}]\tlr: {:.6f}, loss: {:.5f} {}".format(epoch+1,iteration*n_gpus,iter_len,iter_num*n_gpus,lr,loss.item(),metric_str))
         end_time = time.time()
         
         # lr scheduler
@@ -263,9 +264,7 @@ def validate(model, val_dataloader, device, criterion, metrics, is_distributed):
             loss = criterion(output, img_target)
             # metrics
             calc_metrics = metrics(output, img_target)
-
-            # record
-            iter_metrics.update({'loss':iter_metrics.get('loss', 0)+loss.item()})
+            calc_metrics.update({'loss':loss})
             
             # average metric between processes
             for k, v in calc_metrics.items():

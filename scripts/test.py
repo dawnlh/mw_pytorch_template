@@ -15,7 +15,7 @@ from srcs.utils.logger import Logger
 import numpy as np 
 import argparse 
 import time
-import einops 
+from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -103,7 +103,7 @@ def main():
     total_metrics = {}
     time_start = time.time()
     with torch.no_grad():
-        for batch_idx, (img_noise, img_target) in enumerate(test_dataloader):
+        for batch_idx, (img_noise, img_target) in enumerate(tqdm(test_dataloader)):
 
             # data to device
             img_noise, img_target = img_noise.to(device), img_target.to(device)

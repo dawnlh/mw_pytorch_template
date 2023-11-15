@@ -1,6 +1,6 @@
 from ._base_trainer import BaseTrainer
 import torch
-from ._utils import collect
+from ._utils import collect,is_master
 from torchvision.utils import make_grid
 from ._base_trainer import BaseTrainer
 
@@ -63,10 +63,10 @@ class Trainer(BaseTrainer):
             if batch_idx % self.logging_interval == 0 or (batch_idx+1) == self.max_iter:
                 # iter metrics
                 iter_metrics = {}
-                # add loss to iter_metrics
-                iter_metrics.update({'loss':loss})
                 # average metric between processes
                 calc_metrics = self.metrics(output, img_target)
+                # add loss to iter_metrics
+                calc_metrics.update({'loss':loss})
                 for k, v in calc_metrics.items():
                     vv = collect(v) if self.config.runtime.n_gpus > 1 else v
                     iter_metrics.update({k: vv})
@@ -74,8 +74,8 @@ class Trainer(BaseTrainer):
                 # logger & writer
                 metric_str = self.writer_update(epoch*self.max_iter+batch_idx, '[train]',iter_metrics, {}) 
                 proc_str = self.progress(self.config.train_dataloader.batch_size, batch_idx, self.max_iter)
-                self.logger.info(
-                    f'Train Epoch: {epoch:03d} {proc_str}  lr: {self.optimizer.param_groups[0]["lr"]:.4e} | {metric_str}')
+                if is_master():
+                    self.logger.info(f'Train Epoch: {epoch:03d} {proc_str}  lr: {self.optimizer.param_groups[0]["lr"]:.4e} | {metric_str}')
             
             # max iter stop
             if (batch_idx+1) == self.max_iter:
@@ -109,11 +109,10 @@ class Trainer(BaseTrainer):
                 output = self.model(img_noise)
                 # loss calc
                 loss = self.criterion(output, img_target)
+                
                 # metrics
                 calc_metrics = self.metrics(output, img_target)
-
-                # record
-                iter_metrics.update({'loss':iter_metrics.get('loss', 0)+loss.item()})
+                calc_metrics.update({'loss':loss}) # add loss to iter_metrics
                 
                 # average metric between processes
                 for k, v in calc_metrics.items():
@@ -128,5 +127,6 @@ class Trainer(BaseTrainer):
 
             # logger & writer
             metric_str = self.writer_update(epoch, '[valid]', iter_metrics, image_tensors)
-            self.logger.info(
+            if is_master():
+                self.logger.info(
                 '-'*80 + f'\nValid Epoch: {epoch} [{epoch:03d}/{self.num_epochs:03d}]  lr: {self.optimizer.param_groups[0]["lr"]:.4e} | {metric_str}\n' + '-'*80)

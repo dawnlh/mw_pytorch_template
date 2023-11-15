@@ -16,8 +16,8 @@
 
 runtime = dict(
     exp_name = 'UNet',
-    status = 'train',   # 'train' | 'test' | 'realexp'
-    gpus = [6],         # gpus to use
+    status = 'train',   # 'train' | 'test' | simuexp | 'realexp'
+    gpus = [3],         # gpus to use
     tensorboard=True,   # whether use tensorboard
     work_dir = 'work_dirs/' # work directory
 )
@@ -61,14 +61,14 @@ add_noise = dict(type='AddGaussianNoise', sigma=0.05)
 # dataset
 train_dataset = dict(
     type="NoisyImg",
-    data_dir="/hhd/2/zzh/project/simple_pytorch_template/datasets/train/Kodak24/",
+    data_dir="datasets/train/Kodak24",
     pipeline=train_pipeline,
     add_noise = add_noise,
 )
 
 test_dataset = dict(
     type="NoisyImg",
-    data_dir="/hhd/2/zzh/project/simple_pytorch_template/datasets/train/Kodak24/",
+    data_dir="datasets/train/Kodak24",
     add_noise = add_noise,
 )
 

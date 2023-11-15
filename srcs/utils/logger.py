@@ -6,7 +6,8 @@ from datetime import datetime
 import logging, logging.config
 import os, time
 import os.path as osp
-
+from torchvision.utils import make_grid
+import torch 
 
 def Logger(name=None, log_path='./runtime.log'):
     config_dict = {
@@ -65,6 +66,26 @@ class TensorboardWriter():
             self.add_scalar(f'steps_per_sec/{speed_chk}',
                             1 / duration.total_seconds())
         self.timer = datetime.now()
+    
+    def writer_update(self, step, phase, metrics, image_tensors=None):
+        # writer update
+        self.set_step(step, speed_chk=f'{phase}')
+
+        metric_str = ''
+        if metrics:
+            for k, v in metrics.items():
+                if isinstance(v, torch.Tensor):
+                    v = v.item()
+                self.add_scalar(f'{phase}/{k}', v)
+                metric_str += f'{k}: {v:8.5f} '
+        
+        if image_tensors:
+            for k, v in image_tensors.items():
+                self.add_image(
+                    f'{phase}/{k}', make_grid(image_tensors[k][0:8, ...].cpu(), nrow=2, normalize=True))
+        
+        return metric_str # return metric string for logger
+    
 
     def __getattr__(self, name):
         """
@@ -85,8 +106,7 @@ class TensorboardWriter():
             if not attr:
                 raise AttributeError('unimplemented attribute')
             return attr
-
-
+        
 class BatchMetrics:
     def __init__(self, *keys, postfix='', writer=None):
         self.writer = writer

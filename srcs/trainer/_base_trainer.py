@@ -24,7 +24,6 @@ class BaseTrainer(metaclass=ABCMeta):
         ## param assignment
         self.config = config
         self.device = config.trainer.local_rank
-        self.model = model.to(self.device)
         self.criterion = criterion
         self.metrics = metrics
         self.optimizer = optimizer
@@ -32,7 +31,7 @@ class BaseTrainer(metaclass=ABCMeta):
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         cfg_trainer = config.trainer
-
+        
         ## resume
         if config.trainer.resume is not None:
             resume_conf = cfg_trainer.get('resume_conf', None)
@@ -44,8 +43,7 @@ class BaseTrainer(metaclass=ABCMeta):
         self.logger = Logger(name='trainer', log_path=opj(config.runtime.work_dir,'log.txt'))
         self.logging_interval = cfg_trainer.get('logging_interval', 100)
         if is_master():
-            self.writer = TensorboardWriter(
-                config.runtime.tb_dir, config.runtime.tensorboard)
+            self.writer = TensorboardWriter(config.runtime.tb_dir, config.runtime.tensorboard)
         else:
             self.writer = TensorboardWriter(config.runtime.tb_dir, False)
 
@@ -61,10 +59,12 @@ class BaseTrainer(metaclass=ABCMeta):
         self.max_iter = self.max_iter if self.max_iter else len(train_dataloader)
 
         ## model DDP
+        model = model.to(self.device)
         if config.runtime.n_gpus > 1:
             # multi GPU DDP
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = DDP(model, device_ids=[self.device], output_device=self.device)
+        self.model = model
 
         ## info log
         if is_master():
@@ -105,22 +105,24 @@ class BaseTrainer(metaclass=ABCMeta):
         """
         Full training logic
         """
-        self.logger.info(f"\n⏩⏩ Start Training | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ⏩⏩\n"+'=' * 80)
+        if is_master():
+            self.logger.info(f"\n⏩⏩ Start Training | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ⏩⏩\n"+'=' * 80)
         train_start = time.time()
         for epoch in range(self.start_epoch, self.num_epochs + 1):
              # train one epoch
             epoch_start = time.time()
             self._train_epoch(epoch)
-            epoch_end = time.time()
+            cur_time = time.time()
 
-            # save ckp
+            # after epoch
             if is_master():
+                # save ckp
                 self.save_checkpoint(epoch, save_latest_k=self.save_latest_k, milestone_ckp=self.milestone_ckp)
             
-            # log after epoch
-            self.logger.info(
-                f'🕒 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Epoch Time Cost: {epoch_end-epoch_start:.2f}s, Total Time Cost: {(epoch_end-train_start)/3600:.2f}h\n')
-            self.logger.info('=' * 80)
+                # epoch log
+                self.logger.info(
+                    f'🕒 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Epoch Time Cost: {(cur_time-epoch_start)/60:.2f} min, Total Time Cost: {(cur_time-train_start)/3600:.2f} h\n')
+                self.logger.info('=' * 80)
             if self.config.runtime.n_gpus > 1:
                 dist.barrier()
         
@@ -154,7 +156,7 @@ class BaseTrainer(metaclass=ABCMeta):
         filename = opj(self.config.runtime.checkpoints_dir, f'ckp-epoch{epoch}.pth')
         torch.save(state, filename)
         self.logger.info(
-            f"💾 Model checkpoint saved at:\n\t{filename}")
+            f"💾 Model checkpoint saved to:\n\t{filename}")
         if save_best:
             best_path = opj(self.config.runtime.checkpoints_dir, 'model_best.pth')
             copyfile(filename, best_path)
@@ -241,8 +243,8 @@ class BaseTrainer(metaclass=ABCMeta):
         base = '[{:6.2f}%]'
         total = batch_num*batch_size
         current = (batch_idx+1)*batch_size
-        if dist.is_initialized():
-            current *= dist.get_world_size()
+        # if dist.is_initialized():
+        #     current *= dist.get_world_size()
         # proc_str = base.format(current, total, 100.0 * current / total)
         proc_str = base.format(100.0 * current / total)
         return proc_str
